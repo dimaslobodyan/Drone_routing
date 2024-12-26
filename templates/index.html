@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Drone Route</title>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+
+<div id="floating-panel">
+    <input id="add-takeoff" type="button" value="Додати зліт" onclick="toggleAddTakeoffMode()"/>
+    <input id="add-landing" type="button" value="Додати посадку" onclick="toggleAddLandingMode()" />
+</div>
+
+<div id="map"></div>
+
+    <!-- prettier-ignore -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkSqRvVEFHnJxWkUExkAQ_0RPD30RKkAg&map_ids=c11e5ab8a83980c0&callback=initMap"
+        defer
+></script>
+
+<div>
+    <br>
+
+    <div class="content">
+        <form method="POST" action="/upload_file" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput">
+            <input type="submit" value="Завантажити Файл">
+        </form>
+    </div>
+
+    <br>
+
+    <div class="content">
+        <form action="/find_route">
+            <input type="submit" value="Знайти Маршрут">
+        </form>
+    </div>
+
+    <div class="content">
+        <h1>Цілі</h1>
+        <table>
+            <script>
+                if ({{ targets | length }}) {
+                    document.write('<tr>');
+                    document.write('<th>ID</th>');
+                    document.write('<th>Широта</th>');
+                    document.write('<th>Довгота</th>');
+                    document.write('<th>Дії</th>');
+                    document.write('</tr>');
+                }
+            </script>
+
+            {% for target in targets %}
+                <tr>
+                    <td>{{ target.id }}</td>
+                    <td>{{ target.latitude }}</td>
+                    <td>{{ target.longitude }}</td>
+                    <td>
+                        <a href="/delete_target/{{target.id}}">Видалити</a>
+                        <br>
+                        <a href="/update_target/{{target.id}}">Змінити</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <form action="/add_target" method="post">
+            <input type="text" name="latitude" id="latitude" placeholder="Широта">
+            <input type="text" name="longitude" id="longitude" placeholder="Довгота">
+            <input type="submit" value="Додати Ціль">
+        </form>
+    </div>
+
+    <div class="content">
+        <h1>Точка Зльоту</h1>
+        <table>
+            <script>
+                if ({{ takeoffs | length }}) {
+                    document.write('<tr>');
+                    document.write('<th>Широта</th>');
+                    document.write('<th>Довгота</th>');
+                    document.write('<th>Дії</th>');
+                    document.write('</tr>');
+                }
+            </script>
+            {% for takeoff in takeoffs %}
+                <tr>
+                    <td>{{ takeoff.takeoff_latitude }}</td>
+                    <td>{{ takeoff.takeoff_longitude }}</td>
+                    <td>
+                        <a href="/delete_takeoff/{{takeoff.id}}">Видалити</a>
+                        <br>
+                        <a href="/update_takeoff/{{takeoff.id}}">Змінити</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <form action="/add_takeoff" method="post">
+            <input type="text" name="latitude" id="latitude_takeoff" placeholder="Широта">
+            <input type="text" name="longitude" id="longitude_takeoff" placeholder="Довгота">
+            <input type="submit" value="Додати Точку Зльоту">
+        </form>
+    </div>
+
+    <div class="content">
+        <h1>Точка Посадки</h1>
+        <table>
+            <script>
+                if ({{ landings | length }}) {
+                    document.write('<tr>');
+                    document.write('<th>Широта</th>');
+                    document.write('<th>Довгота</th>');
+                    document.write('<th>Дії</th>');
+                    document.write('</tr>');
+                }
+            </script>
+            {% for landing in landings %}
+                <tr>
+                    <td>{{ landing.landing_latitude }}</td>
+                    <td>{{ landing.landing_longitude }}</td>
+                    <td>
+                        <a href="/delete_landing/{{landing.id}}">Видалити</a>
+                        <br>
+                        <a href="/update_landing/{{landing.id}}">Змінити</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <form action="/add_landing" method="post">
+            <input type="text" name="latitude" id="latitude_landing" placeholder="Широта">
+            <input type="text" name="longitude" id="longitude_landing" placeholder="Довгота">
+            <input type="submit" value="Додати Точку Посадки">
+        </form>
+    </div>
+
+    <div class="content">
+        <h1>Дрони</h1>
+        <table>
+            <script>
+                if ({{ drones | length }}) {
+                    document.write('<tr>');
+                    document.write('<th>Швидкість</th>');
+                    document.write('<th>Час польоту</th>');
+                    document.write('<th>Дії</th>');
+                    document.write('</tr>');
+                }
+            </script>
+            {% for drone in drones %}
+                <tr>
+                    <td>{{ drone.average_speed }}</td>
+                    <td>{{ drone.max_flight_time }}</td>
+                    <td>
+                        <a href="/delete_drone/{{drone.id}}">Видалити</a>
+                        <br>
+                        <a href="/update_drone/{{drone.id}}">Змінити</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <form action="/add_drone" method="post">
+            <input type="text" name="speed" id="speed" placeholder="Швидкість">
+            <input type="text" name="timetofly" id="timetofly" placeholder="Час польоту в хв">
+            <input type="submit" value="Додати Дрона">
+        </form>
+    </div>
+
+    <br>
+
+
+
+</div>
+<br>
+
+
+{% endblock %}

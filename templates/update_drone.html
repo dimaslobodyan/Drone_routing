@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Drone Route</title>
+{% endblock %}
+
+
+
+{% block body %}
+<div class="content">
+    <h1>Update Drone</h1>
+
+    <table>
+        <tr>
+            <th>Speed</th>
+            <th>Time to Fly</th>
+            <th></th>
+        </tr>
+    </table>
+
+    <form action="/update_drone/{{drone.id}}" method="post">
+        <input type="text" name="speed" id="speed" value="{{drone.average_speed}}">
+        <input type="text" name="timetofly" id="timetofly"  value="{{drone.max_flight_time}}">
+        <input type="submit" value="Update Drone">
+    </form>
+</div>
+{% endblock %}

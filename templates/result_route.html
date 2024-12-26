@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Result Route</title>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+{% endblock %}
+
+
+
+{% block body %}
+<div class="content">
+    <h1>Маршрут</h1>
+</div>
+
+
+<div id="map"></div>
+
+    <!-- prettier-ignore -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkSqRvVEFHnJxWkUExkAQ_0RPD30RKkAg&map_ids=c11e5ab8a83980c0&callback=initMap"
+        defer
+></script>
+
+<script>
+
+    let map;
+    const image ="https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png";
+
+    function addLanding(latLng) {
+      // Create a takeoff
+      const landing = new google.maps.Marker({
+        position: latLng,
+        map: map,
+        draggable: false, // Allow landing to be draggable
+        icon: image,
+        title: "Посадка"
+      });
+
+      // Add a click listener for the landing
+      landing.addListener("click", () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: `${landing.getTitle()}<br>
+            Широта: ${latLng.lat()}, Довгота: ${latLng.lng()}`,
+        });
+        infoWindow.close();
+        infoWindow.open(map, landing);
+      });
+    }
+
+    function addTakeoff(latLng) {
+      // Create a takeoff
+      const takeoff = new google.maps.Marker({
+        position: latLng,
+        map: map,
+        draggable: false, // Allow takeoff to be draggable
+        icon: image,
+        title: "Зліт"
+      });
+
+      // Add a click listener for the takeoff
+      takeoff.addListener("click", () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: `${takeoff.getTitle()}<br>Широта: ${latLng.lat()}, Довгота: ${latLng.lng()}`,
+        });
+        infoWindow.close();
+        infoWindow.open(map, takeoff);
+      });
+    }
+
+    function addMarker(id, latLng) {
+      // Create a marker
+      const marker = new google.maps.Marker({
+        position: latLng,
+        map: map,
+        draggable: false, // Allow marker to be draggable
+        label: `${id}`,
+      });
+
+      // Add a click listener for the marker
+      marker.addListener("click", () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: `Широта: ${latLng.lat()}, Довгота: ${latLng.lng()}`,
+        });
+        infoWindow.close();
+        infoWindow.open(map, marker);
+      });
+    }
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: { lat: 34.84555, lng: -111.8035 },
+      });
+
+      // Define a symbol using a predefined path (an arrow)
+      // supplied by the Google Maps JavaScript API.
+      const lineSymbol = {
+        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+      };
+
+      // Draw polyline using points_array
+      polyline = new google.maps.Polyline({
+          path: {{ points_array | tojson }},
+          geodesic: true,
+          strokeColor: "#FF0000",
+          strokeOpacity: 1.0,
+          strokeWeight: 2,
+          icons: [{
+            icon: lineSymbol,
+            offset: "100%",
+            },],
+      });
+
+      polyline.setMap(map);
+    }
+
+    function fetchAndDisplayMarkers() {
+      // Create an empty bounds object
+      const bounds = new google.maps.LatLngBounds();
+
+      fetch('/map_get_targets')
+        .then(response => response.json())
+        .then(targets => {
+          targets.forEach(target => {
+            const latLng = new google.maps.LatLng(target.lat, target.lng);
+            addMarker(target.id,latLng); // Add marker using the addMarker function
+            bounds.extend(latLng); // Extend bounds to include the marker
+          });
+          // Fit the map to the bounds
+          map.fitBounds(bounds);
+        })
+        .catch(error => {
+          console.error('Error fetching targets:', error);
+        });
+
+      fetch('/map_get_takeoffs')
+        .then(response => response.json())
+        .then(takeoffs => {
+          takeoffs.forEach(takeoff => {
+            const latLng = new google.maps.LatLng(takeoff.lat, takeoff.lng);
+            addTakeoff(latLng); // Add marker using the addMarker function
+            bounds.extend(latLng); // Extend bounds to include the marker
+          });
+          // Fit the map to the bounds
+          map.fitBounds(bounds);
+        })
+        .catch(error => {
+          console.error('Error fetching takeoffs:', error);
+        });
+
+      fetch('/map_get_landings')
+        .then(response => response.json())
+        .then(landings => {
+          landings.forEach(landing => {
+            const latLng = new google.maps.LatLng(landing.lat, landing.lng);
+            addLanding(latLng); // Add marker using the addMarker function
+            bounds.extend(latLng); // Extend bounds to include the marker
+          });
+          // Fit the map to the bounds
+          map.fitBounds(bounds);
+        })
+        .catch(error => {
+          console.error('Error fetching landings:', error);
+        });
+    }
+
+    function downloadRouteAsText() {
+        // Combine target ID and coordinates for each ID
+        let routeText = '';
+        let id_data = 0;
+        let info_id = {{ id_route }}
+
+        {% for point in points_array %}
+            {% if loop.index0 != 0 and loop.index0 != points_array|length - 1 %}
+                routeText += `ID: ${ info_id[id_data] }, Latitude: ${ {{point.lat}} }, Longitude: ${ {{point.lng}} }\n`;
+                id_data = id_data + 1;
+            {% elif loop.index0 == 0 %}
+                routeText += `ID: takeoff, Latitude: ${ {{point.lat}} }, Longitude: ${ {{point.lng}} }\n`;
+            {% else %}
+                routeText += `ID: landing, Latitude: ${ {{point.lat}} }, Longitude: ${ {{point.lng}} }\n`;
+            {% endif %}
+        {% endfor %}
+
+        // Create a Blob object from the routeText
+        const blob = new Blob([routeText], { type: 'text/plain' });
+
+        // Create a temporary URL for the Blob
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'route.txt';
+        document.body.appendChild(link);
+
+        // Trigger a click event on the link to start the download
+        link.click();
+
+        // Remove the link from the document
+        document.body.removeChild(link);
+    }
+
+    window.initMap = initMap;
+    // Call this function to fetch targets and display markers when the page loads
+    window.onload = fetchAndDisplayMarkers;
+
+    // Function to handle button click and delete targets in route
+    function deleteTargetsInRoute() {
+        {% for id in id_route %}
+            fetch('/delete_target/{{id}}')
+        {% endfor %}
+
+
+        .then(response => {
+            if (response.ok) {
+                // Redirect to "/"
+                window.location.href = "/";
+            } else {
+                console.error('Failed to delete targets:', response.status);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting targets:', error);
+        });
+    }
+</script>
+
+<br>
+<div class="content">
+    <h3>Відстань: {{ flight_distance }} км</h3>
+    <h3>Час: {{ time }} хв</h3>
+    <h3>Цілей обстежено: {{ visited_num }} з {{ num_points }}</h3>
+    <h3> Маршрут: Зліт ->
+        {% for id in id_route %}
+            {{ id }} ->
+        {% endfor %}
+        Посадка
+    </h3>
+
+    <button onclick="downloadRouteAsText()">Заватнажити Маршрут</button>
+    <br><br>
+
+    <button onclick="deleteTargetsInRoute()">Видалити обстежені цілі та Повернутися</button>
+    <br><br>
+
+    <form action="/">
+        <input type="submit" value="Повернутися">
+    </form>
+    <br>
+</div>
+{% endblock %}

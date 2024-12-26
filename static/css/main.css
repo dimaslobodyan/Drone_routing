@@ -1,0 +1,28 @@
+
+/*
+ * Optional: Makes the sample page fill the window.
+ */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+  max-width: 800px;
+}
+
+#floating-panel {
+  position: relative;
+  width: fit-content;
+  top: 49px;
+  left: 220px;
+  z-index: 5;
+  background-color: #fff;
+  padding: 8px;
+  border: 1px solid #999;
+}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Drone Route</title>
+{% endblock %}
+
+
+
+{% block body %}
+<div class="content">
+    <h1>Update Takeoff Point</h1>
+
+    <table>
+        <tr>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th></th>
+        </tr>
+    </table>
+
+    <form action="/update_takeoff/{{takeoff.id}}" method="post">
+        <input type="text" name="latitude" id="latitude_takeoff" value="{{takeoff.takeoff_latitude}}">
+        <input type="text" name="longitude" id="longitude_takeoff" value="{{takeoff.takeoff_longitude}}">
+        <input type="submit" value="Update Takeoff Point">
+    </form>
+</div>
+{% endblock %}
